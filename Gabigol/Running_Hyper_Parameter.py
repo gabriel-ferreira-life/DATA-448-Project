@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from scipy.stats import boxcox
 from sklearn.svm import SVC, SVR
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier, plot_tree
@@ -24,8 +24,7 @@ X = train.drop(['Diabetes_012'], axis = 1)
 Y = train['Diabetes_012']
 
 # Splitting the data
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, stratify = Y)
-
+X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size = 0.2, stratify = Y)
 
 # Defining top 8, 7, and 6 variables
 # Train dataset Random Forest Classifier
@@ -190,3 +189,87 @@ print("Model: ", Tree_model_8)
 print("Score: ", round(Tree_score_8, 3))
 print(" ")
 print(" ")
+
+
+
+# Defining top 8, 7, and 6 variables
+# Train dataset Gradient Boosting Classifier
+GBC_X_train_8 = X_train[['Tree_1', 'Log_BMI', 'Interaction_5', 'Interaction_3', 'Interaction_1', 'GenHlth', 'Age', '75,000+']]
+GBC_X_train_7 = X_train[['Tree_1', 'Log_BMI', 'Interaction_5', 'Interaction_3', 'Interaction_1', 'GenHlth', 'Age']]
+GBC_X_train_6 = X_train[['Tree_1', 'Log_BMI', 'Interaction_5', 'Interaction_3', 'Interaction_1', 'GenHlth']]
+
+
+## Defining the hyper-parameters for Gradient Boosting Classifier
+GBC_param_grid =  {'n_estimators': [100, 300, 500],
+                  'min_samples_split': [10, 15],
+                  'min_samples_leaf': [5, 7],
+                  'max_depth': [3, 5, 7],
+                  'learning_rate': [0.001, 0.01, 0.1]}
+
+# Performing GridSearch
+GBC_grid_search_6 = GridSearchCV(GradientBoostingClassifier(), GBC_param_grid, cv = 3, scoring = 'f1_micro', n_jobs = -1).fit(GBC_X_train_6, Y_train)
+GBC_grid_search_7 = GridSearchCV(GradientBoostingClassifier(), GBC_param_grid, cv = 3, scoring = 'f1_micro', n_jobs = -1).fit(GBC_X_train_7, Y_train)
+GBC_grid_search_8 = GridSearchCV(GradientBoostingClassifier(), GBC_param_grid, cv = 3, scoring = 'f1_micro', n_jobs = -1).fit(GBC_X_train_8, Y_train)
+
+# Extracting the best model
+GBC_model_6 = GBC_grid_search_6.best_estimator_
+GBC_score_6 = GBC_grid_search_6.cv_results_
+GBC_score_6 = GBC_score_6['mean_test_score'][0]
+
+
+# Printing the results
+print("Gradient Boosting Classifier with the top 6 features")
+print("Model: ", GBC_model_6)
+print("Score: ", round(GBC_score_6, 3))
+print(" ")
+print(" ")
+
+
+# Extracting the best model
+GBC_model_7 = GBC_grid_search_7.best_estimator_
+GBC_score_7 = GBC_grid_search_7.cv_results_
+GBC_score_7 = GBC_score_7['mean_test_score'][0]
+
+# Printing the results
+print("Gradient Boosting Classifier with the top 7 features")
+print("Model: ", GBC_model_7)
+print("Score: ", round(GBC_score_7, 3))
+print(" ")
+print(" ")
+
+# Extracting the best model
+GBC_model_8 = GBC_grid_search_8.best_estimator_
+GBC_score_8 = GBC_grid_search_8.cv_results_
+GBC_score_8 = GBC_score_8['mean_test_score'][0]
+
+# Printing the results
+print("Gradient Boosting Classifier with the top 8 features")
+print("Model: ", GBC_model_8)
+print("Score: ", round(GBC_score_8, 3))
+print(" ")
+print(" ")
+
+
+# List of models
+models = [RF_model_6, RF_model_7, RF_model_8,
+         Ada_model_6, Ada_model_7, Ada_model_8,
+         Tree_model_6, Tree_model_7, Tree_model_8,
+         GBC_model_6, GBC_model_8, GBC_model_8]
+
+# List of scores
+scores = [RF_score_6, RF_score_7, RF_score_8,
+         Ada_score_6, Ada_score_7, Ada_score_8,
+         Tree_score_6, Tree_score_7, Tree_score_8,
+         GBC_score_6, GBC_score_7, GBC_score_8]
+
+# Number of top features used
+variables = ["top 6", "top 7", "top 8",
+            "top 6", "top 7", "top 8",
+            "top 6", "top 7", "top 8",
+            "top 6", "top 7", "top 8"]
+
+# Saving results in a data-frame
+results = pd.DataFrame({"Models": models, "Variables": variables, "Scores": scores})
+
+# Exporting as csv
+results.to_csv("best_models.csv", index = False)
